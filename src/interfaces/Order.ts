@@ -5,5 +5,5 @@ export interface Order{
     phoneNumber: string,
     content: string|undefined,
     total: string|undefined,
-    remark: string
+    remark: string|undefined
 }
