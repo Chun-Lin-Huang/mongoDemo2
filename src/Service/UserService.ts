@@ -1,142 +1,100 @@
 import { Service } from "../abstract/Service";
-import { Student } from "../interfaces/Student";
+import { Order } from "../interfaces/Order";
 import { logger } from "../middlewares/log";
-import { studentsModel } from "../orm/schemas/studentSchemas";
-import { Document } from "mongoose"
-import { MongoDB } from "../utils/MongoDB";
+import { ordersModel } from "../orm/schemas/ordersSchemas";
 import { DBResp } from "../interfaces/DBResp";
 import { resp } from "../utils/resp";
 
-type seatInfo = {
-    schoolName:string,
-    department:string,
-    seatNumber:string
-}
-
 export class UserService extends Service {
-
-    public async getAllStudents(): Promise<Array<DBResp<Student>>|undefined> {
+    public async getAllOrders(): Promise<Array<DBResp<Order>> | undefined> {
         try {
-            const res:Array<DBResp<Student>> = await studentsModel.find({});
+            const res: Array<DBResp<Order>> = await ordersModel.find({});
             return res;
         } catch (error) {
             return undefined;
         }
-        
     }
 
     /**
-     * 新增學生
-     * @param info 學生資訊
+     * 新增訂單
+     * @param info 訂單資訊
      * @returns resp
      */
-    public async insertOne(info: Student): Promise<resp<DBResp<Student>|undefined>>{
-
-        const current = await this.getAllStudents()
-        const resp:resp<DBResp<Student>|undefined> = {
+    public async insertOne(info: Order): Promise<resp<DBResp<Order> | undefined>> {
+        const current = await this.getAllOrders();
+        const resp: resp<DBResp<Order> | undefined> = {
             code: 200,
             message: "",
-            body: undefined
-        }
+            body: undefined,
+        };
 
-        if (current && current.length>0) {
-            try{
-                const nameValidator = await this.userNameValidator(info.userName);
-                if (current.length>=200) {
+        if (current && current.length > 0) {
+            try {
+                const phoneValidator = await this.phoneNumberValidator(info.phoneNumber);
+                if (current.length >= 200) {
                     resp.message = "student list is full";
                     resp.code = 403;
-                }else{
-                    if (nameValidator === "驗證通過") {
-                        info.sid = String(current.length+1) ;
+                } else {
+                    if (phoneValidator === "驗證通過") {
+                        info.sid = String(current.length + 1);
                         info._id = undefined;
-                        const res = new studentsModel(info);
+                        const res = new ordersModel(info);
                         resp.body = await res.save();
-                    }else{
+                    } else {
                         resp.code = 403;
-                        resp.message = nameValidator;
+                        resp.message = phoneValidator;
                     }
                 }
-            } catch(error){
+            } catch (error) {
                 resp.message = "server error";
                 resp.code = 500;
             }
-        }else{
+        } else {
             resp.message = "server error";
             resp.code = 500;
         }
 
         return resp;
-
     }
 
     /**
-     * 學生名字驗證器
-     * @param userName 學生名字
-     * tku ee 0787
-     * ee 科系縮寫
-     *  0787 四碼
-     * 座號檢查，跟之前有重複就噴錯  只能寫沒重複的號碼
+     * 電話號碼驗證器
+     * @param phoneNumber 電話號碼
+     * @returns 驗證結果
      */
-    public async userNameValidator(userName: string): Promise<
-    '學生名字格式不正確，應為 tku + 科系縮寫 + 四碼座號，例如: tkubm1760' | '座號已存在' | '校名必須為 tku' | '座號格式不正確，必須為四位數字。' | '驗證通過'
+    public async phoneNumberValidator(
+        phoneNumber: string
+    ): Promise<
+        "電話號碼格式不正確，應為 0912-123-456" | "電話號碼已存在" | "驗證通過"
     > {
-
-        if (userName.length < 7) { 
-            return ('學生名字格式不正確，應為 tku + 科系縮寫 + 四碼座號，例如: tkubm1760');
+        // 驗證電話號碼格式 (格式：0912-123-456)
+        const phonePattern = /^09\d{2}-\d{3}-\d{3}$/;
+        if (!phonePattern.test(phoneNumber)) {
+            return "電話號碼格式不正確，應為 0912-123-456";
         }
 
-        const info = this.userNameFormator(userName);
-
-        if (info.schoolName !== 'tku') {
-            return '校名必須為 tku';
-        }
-    
-        // 驗證座號(正則不想寫可以給 gpt 寫, 記得測試就好)
-        const seatNumberPattern = /^\d{4}$/; // 驗證4個數字
-        
-        if (!seatNumberPattern.test(info.seatNumber)) {
-            return '座號格式不正確，必須為四位數字。';
+        if (await this.existingPhoneNumbers(phoneNumber)) {
+            return "電話號碼已存在";
         }
 
-        if (await this.existingSeatNumbers(info.seatNumber)) {
-            return '座號已存在'
-        }
-
-        return '驗證通過'
-        
+        return "驗證通過";
     }
 
     /**
-     * 用戶名格式化
-     * @param userName 用戶名
-     * @returns seatInfo
+     * 檢查電話號碼是否已存在
+     * @param phoneNumber 電話號碼
+     * @returns 是否存在
      */
-    public userNameFormator(userName: string){
-        const info:seatInfo = {
-            schoolName: userName.slice(0, 3),
-            department: userName.slice(3, userName.length - 4),
-            seatNumber: userName.slice(-4)
-        }
-        return info
-    }
-
-    /**
-     * 檢查用戶名是否存在
-     * @param SeatNumber 
-     * @returns boolean
-     */
-    public async existingSeatNumbers(SeatNumber:string):Promise<boolean>{
-        const students = await this.getAllStudents();
-        let exist = false
+    public async existingPhoneNumbers(phoneNumber: string): Promise<boolean> {
+        const students = await this.getAllOrders();
+        let exist = false;
         if (students) {
-            students.forEach((student)=>{
-                const info = this.userNameFormator(student.userName)
-                if (info.seatNumber === SeatNumber) {
+            students.forEach((student) => {
+                if (student.phoneNumber === phoneNumber) {
                     exist = true;
                 }
-            })
+            });
         }
-        return exist
+        return exist;
     }
-
 }
