@@ -128,6 +128,14 @@ export class UserService extends Service {
         return resp;
     }
 
+    /**
+     * 更新訂單
+     * @param sid 訂單編號
+     * @param name 姓名
+     * @param phoneNumber 電話
+     * @param remark 備註
+     * @returns 
+     */
     public async updateOrderBySid(
         sid: string,
         name?: string,

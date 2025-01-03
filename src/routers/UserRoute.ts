@@ -41,6 +41,9 @@ export class UserRoute extends Route{
             this.Contorller.deleteBySid(req, res);
         })
 
+        /**
+         * 更新訂單
+         */
         this.router.put(`${this.url}updateOrderBySid`, (req, res) => {
             this.Contorller.updateOrderBySid(req, res);
         });        
