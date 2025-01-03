@@ -20,19 +20,29 @@ export class UserRoute extends Route{
         })
 
         /**
-         * 新增學生
+         * 新增訂單
          * request body {
-         *  userName: string,
-         *  name: string",
-         *  department: string,
-         *  grade: string,
-         *  class: string,
-         *  Email: string
+         *  name: string,
+         *  phoneNumber: string",
+         *  content: string,
+         *  total: string,
+         *  remark: string
          * } 
          * @returns resp<Student>
          */
         this.router.post(`${this.url}insertOne`,(req, res)=>{
             this.Contorller.insertOne(req, res);
         })
+
+        /**
+         * 刪除訂單
+         */
+        this.router.delete(`${this.url}deleteBySid`, (req, res) => {
+            this.Contorller.deleteBySid(req, res);
+        })
+
+        this.router.put(`${this.url}updateOrderBySid`, (req, res) => {
+            this.Contorller.updateOrderBySid(req, res);
+        });        
     }
 }

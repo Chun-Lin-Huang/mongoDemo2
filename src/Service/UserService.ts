@@ -97,4 +97,74 @@ export class UserService extends Service {
         }
         return exist;
     }
+
+    /**
+     * 刪除訂單
+     * @param sid 訂單編號
+     * @returns 
+     */
+    public async deleteBySid(sid: string): Promise<resp<undefined>> {
+        const resp: resp<undefined> = {
+            code: 200,
+            message: "",
+            body: undefined,
+        };
+
+        try {
+            
+            const deletedOrder = await ordersModel.findOneAndDelete({ sid });
+
+            if (deletedOrder) {
+                resp.message = "Order deleted successfully";
+            } else {
+                resp.code = 404;
+                resp.message = "Order not found";
+            }
+        } catch (error) {
+            resp.code = 500;
+            resp.message = "server error";
+        }
+
+        return resp;
+    }
+
+    public async updateOrderBySid(
+        sid: string,
+        name?: string,
+        phoneNumber?: string,
+        remark?: string
+    ) {
+        const response: resp<DBResp<Order> | string> = {
+            code: 200,
+            message: "",
+            body: "",
+        };
+    
+        try {
+            // 查詢是否存在指定 sid 的訂單
+            const order: DBResp<Order> | null = await ordersModel.findOne({ sid });
+            if (!order) {
+                response.code = 404;
+                response.message = "無效的 SID 或找不到該訂單";
+                return response;
+            }
+    
+            // 更新資料，只有傳入新值時才會更新
+            if (name) order.name = name;
+            if (phoneNumber) order.phoneNumber = phoneNumber;
+            if (remark) order.remark = remark;
+    
+            // 保存更新
+            await order.save();
+            response.body = order;
+            response.message = "更新成功";
+    
+        } catch (error) {
+            console.error("更新訂單錯誤:", error);
+            response.code = 500;
+            response.message = "伺服器錯誤";
+        }
+    
+        return response;
+    }    
 }
