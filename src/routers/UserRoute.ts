@@ -14,7 +14,10 @@ export class UserRoute extends Route{
     }
 
     protected setRoutes(): void {
-        
+
+        /**
+         * 讀取訂單
+         */
         this.router.get(`${this.url}findAll`,(req, res)=>{
             this.Contorller.findAll(req, res);
         })
